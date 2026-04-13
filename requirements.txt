@@ -1,0 +1,27 @@
+requests>=2.28
+beautifulsoup4>=4.12
+flask>=3.0
+pytesseract>=0.3.10
+Pillow>=9.0
+
+# FastAPI + WebSocket support (v2.0 architecture)
+fastapi>=0.110
+uvicorn[standard]>=0.27
+websockets>=12.0
+python-multipart>=0.0.6
+jinja2>=3.1
+httpx>=0.27
+
+# Phase 1: Tool Expansion (new tools 15-24)
+pymupdf>=1.24        # PDF reader (Tool 17) — provides 'fitz' module
+psutil>=5.9          # Process manager (Tool 19) — system/process monitoring
+pyyaml>=6.0          # JSON/YAML tool (Tool 15) — YAML parsing
+
+# Ollama runs locally — no Python package needed (uses HTTP API)
+# Just install Ollama from https://ollama.com and run: ollama pull llama3.2
+
+# Optional: For OpenAI cloud API
+# openai>=1.0
+
+# Optional: For Discord signature verification
+# PyNaCl>=1.5

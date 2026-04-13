@@ -1,0 +1,62 @@
+# ── Python ────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# ── Virtual environment ───────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+
+# ── Environment / secrets ─────────────────────────────────────────────
+.env
+.env.*
+*.env
+
+# ── AgentForge auto-generated files ──────────────────────────────────
+memory.db
+memory.db-shm
+memory.db-wal
+app.log
+app.log.*
+.app.pid
+nul
+
+# Agent runtime state (auto-created anywhere in the tree, not config)
+MEMORY.md
+heartbeat_state.json
+agent_notes.json
+agent_activity.json
+agent_schedule.json
+ocr_index.json
+
+# OCR uploads
+ocr_uploads/
+
+# ── Vector store (T3-4B) ──────────────────────────────────────────────
+chroma_db/
+
+# ── IDE ───────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ── OS ────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Test / coverage ───────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
