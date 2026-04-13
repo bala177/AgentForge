@@ -58,20 +58,20 @@ AgentForge is a **Python/FastAPI AI agent platform** with:
 
 ### Coverage Score
 
-> **Updated after Tier 2 completion (T2-1 compaction, T2-2 HEARTBEAT, T2-3 schedule_tool, T2-4 streaming)**
+> **Updated after T3-1 completion (April 13 2026 — Tier 1 ✅, Tier 2 ✅, T3-1 typed schemas ✅)**
 
-| Category             | AgentForge (post-T2) | OpenClaw | Gap      |
-| -------------------- | -------------------- | -------- | -------- |
-| Gateway & API Layer  | 70%                  | 100%     | 30%      |
-| Agent Core / Runtime | 60%                  | 100%     | 40%      |
-| Tool System          | 45%                  | 100%     | 55%      |
-| Channel Support      | 45%                  | 100%     | 55%      |
-| Multi-Agent          | 0%                   | 100%     | 100%     |
-| Streaming & UX       | 65%                  | 100%     | 35%      |
-| Safety & Security    | 15%                  | 100%     | 85%      |
-| Observability & Ops  | 20%                  | 100%     | 80%      |
-| Platform / Apps      | 5%                   | 100%     | 95%      |
-| **OVERALL**          | **~40%**             | **100%** | **~60%** |
+| Category             | AgentForge (post-T3-1) | OpenClaw | Gap      |
+| -------------------- | ---------------------- | -------- | -------- |
+| Gateway & API Layer  | 70%                    | 100%     | 30%      |
+| Agent Core / Runtime | 65%                    | 100%     | 35%      |
+| Tool System          | 52%                    | 100%     | 48%      |
+| Channel Support      | 45%                    | 100%     | 55%      |
+| Multi-Agent          | 0%                     | 100%     | 100%     |
+| Streaming & UX       | 65%                    | 100%     | 35%      |
+| Safety & Security    | 15%                    | 100%     | 85%      |
+| Observability & Ops  | 20%                    | 100%     | 80%      |
+| Platform / Apps      | 5%                     | 100%     | 95%      |
+| **OVERALL**          | **~48%**               | **100%** | **~52%** |
 
 ---
 
@@ -198,7 +198,7 @@ Channels (7)    ───►  FastAPI + Uvicorn (port 5000)
 | 29  | Skills platform (extensible tools)  | ✅ ClawHub registry, install/manage                                                                      | ❌ Hard-coded TOOL_REGISTRY              | ❌ Missing |
 | 30  | Tool cache (avoid re-calls)         | ✅ (session-level)                                                                                       | ✅ SQLite tool_cache with TTL            | ✅ Done    |
 | 31  | Parallel tool calls                 | ✅ Concurrent execution                                                                                  | ❌ Sequential only                       | ❌ Missing |
-| 32  | Tool input validation / schema      | ✅ TypeBox schemas                                                                                       | ❌ String-in/string-out only             | ❌ Missing |
+| 32  | Tool input validation / schema      | ✅ TypeBox schemas                                                                                       | ✅ `params` dict + `params_to_str` (T3-1) | ✅ Done (T3-1) |
 | 33  | Custom user tools                   | ✅ Workspace skills (SKILL.md)                                                                           | ❌ Must edit tools.py source             | ❌ Missing |
 
 ### Category 4: Channel Support
@@ -274,10 +274,10 @@ Channels (7)    ───►  FastAPI + Uvicorn (port 5000)
 | Priority | Gap                       | Impact                                                | Status                                                 |
 | -------- | ------------------------- | ----------------------------------------------------- | ------------------------------------------------------ |
 | ~~P0~~   | ~~No response streaming~~ | ~~User sees nothing for 5-30s~~                       | ✅ **RESOLVED (T2-4)** — tool events + token streaming |
-| **P1**   | 24 tools (growing)        | Good — now leads all competitors. Typed schemas next. | ⚠️ Schemas still string-based (T3-1)                   |
+| ~~P1~~   | ~~Tool input schemas~~    | ~~All tools take a raw string, LLM must guess format~~ | ✅ **RESOLVED (T3-1)** — `params` dict + `params_to_str` on all 25 tools |
 | **P2**   | No code execution sandbox | Agent has `code_runner` but no Docker isolation       | 🔶 Partial — needs sandboxing (T3)                     |
 | ~~P3~~   | ~~No slash commands~~     | ~~Basic session hygiene~~                             | ✅ **RESOLVED (T1-3)** — 7 commands, `/compact` works  |
-| **P4**   | No tool input schemas     | All tools take a raw string, LLM must guess format    | ❌ Missing — T3-1                                      |
+| ~~P4~~   | ~~No tool input schemas~~ | ~~All tools take a raw string, LLM must guess format~~ | ✅ **RESOLVED (T3-1)** — typed params dispatch via `_resolve_tool_input()` |
 | **P5**   | No model failover         | If Ollama is down, LLM features stop                  | ❌ Missing — Phase 5                                   |
 | **P6**   | No health endpoint        | No `/health` or `doctor` command for diagnostics      | ❌ Missing — Phase 5                                   |
 | **P7**   | No access control         | Anyone can use any endpoint, no auth                  | ❌ Missing — Phase 5                                   |

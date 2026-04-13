@@ -442,33 +442,33 @@ Channels (7+) --> FastAPI + Uvicorn (port 5000)
                         |    |- ReAct loop (20 steps, AGENT_MAX_STEPS env)       ✅ T1-1
                         |    |- SOUL/USER/AGENTS/TOOLS/HEARTBEAT.md injected     ✅ T1-2
                         |    |- Keyword fallback (unique -- always works)        ✅ existing
-                        |    |- Context compaction (auto at 80% or every 20 msgs) 🔜 T2-1
-                        |    +- Typed function calling (OpenAI function schema)   📋 T3-1
+                        |    |- Context compaction (auto at 80% or every 20 msgs) ✅ T2-1
+                        |    +- Typed function calling (params + params_to_str)  ✅ T3-1
                         |
                         |- Slash Command Handler                                 ✅ T1-3
                         |    /new /help /tools /model /status /memory /compact
                         |    (planned: /install <skill>)                          📋 T3-2
                         |
-                        |- Tool System (24+ tools)
-                        |    |- TOOL_REGISTRY built-ins (24 tools)               ✅ existing
+                        |- Tool System (25 tools)
+                        |    |- TOOL_REGISTRY built-ins (25 tools, typed params) ✅ T3-1
                         |    |- Path-sandboxed via WORKSPACE_ROOT guard          ✅ T1-4
                         |    |- Skills/ directory (dynamic load at startup)       📋 T3-2
                         |    +- MCP client (MCP_SERVERS env var)                  📋 T3-3
                         |
                         |- Memory System
                         |    |- SQLite: conversations + facts + tool-cache (TTL) ✅ existing
-                        |    |- LLM consolidation + MEMORY.md                    🔜 T2-1
+                        |    |- LLM consolidation + MEMORY.md                    ✅ T2-1
                         |    |- TF-IDF retrieval (scikit-learn)                   📋 T3-4A
                         |    +- ChromaDB vector store                             📋 T3-4B
                         |
                         |- Background Services
-                        |    |- HEARTBEAT.md scheduler (threading.Timer)          🔜 T2-2
-                        |    +- APScheduler cron jobs (schedule_tool)             🔜 T2-3
+                        |    |- HEARTBEAT.md scheduler (threading.Timer)          ✅ T2-2
+                        |    +- APScheduler cron jobs (schedule_tool)             ✅ T2-3
                         |
                         +- LLM Router
                              |- Ollama (local, primary, auto-detect models)      ✅ existing
                              |- OpenAI / Anthropic / others (configured fallback) ✅ existing
-                             |- LLM token streaming over WebSocket                🔜 T2-4
+                             |- LLM token streaming over WebSocket                ✅ T2-4
                              +- Keyword fallback (always answers)                ✅ existing
 ```
 
@@ -486,16 +486,16 @@ Channels (7+) --> FastAPI + Uvicorn (port 5000)
 | 1   | Agent loop steps                       | Unlimited     | 40        | Unlimited    | ✅ 20 (env) | ✅ Done (T1-1) |
 | 2   | ReAct pattern                          | ✅            | ✅        | ✅           | ✅          | ✅ Done        |
 | 3   | Keyword fallback [U]                   | ❌            | ❌        | ❌           | ✅          | ✅ Keep        |
-| 4   | Typed function calling                 | ✅ TypeBox    | ✅ OpenAI | ✅           | ❌          | **T3-1**       |
+| 4   | Typed function calling                 | ✅ TypeBox    | ✅ OpenAI | ✅           | ✅ params   | ✅ Done (T3-1) |
 | 5   | Personality files (SOUL/USER/AGENTS)   | ✅            | ✅ all 5  | ✅ CLAUDE.md | ✅ all 5    | ✅ Done (T1-2) |
-| 6   | Context compaction (msg count trigger) | ✅ `/compact` | ✅ auto   | ❌           | ❌          | **T2-1**       |
-| 7   | Auto-compact at 80% context window     | ✅            | ❌        | ❌           | ❌          | **T2-1**       |
-| 8   | HEARTBEAT background scheduler         | ❌            | ✅        | ❌           | ❌          | **T2-2**       |
+| 6   | Context compaction (msg count trigger) | ✅ `/compact` | ✅ auto   | ❌           | ✅          | ✅ Done (T2-1) |
+| 7   | Auto-compact at 80% context window     | ✅            | ❌        | ❌           | ✅          | ✅ Done (T2-1) |
+| 8   | HEARTBEAT background scheduler         | ❌            | ✅        | ❌           | ✅          | ✅ Done (T2-2) |
 | 9   | Thinking levels (off/low/high)         | ✅ 6 levels   | ❌        | ❌           | ❌          | T3             |
 | 10  | Multi-turn conversation                | ✅            | ✅        | ✅           | ✅          | ✅ Done        |
-| 11  | LLM token streaming                    | ✅            | ✅        | ✅           | ❌          | **T2-4**       |
+| 11  | LLM token streaming                    | ✅            | ✅        | ✅           | ✅          | ✅ Done (T2-4) |
 | 12  | Sub-agent spawning                     | ✅            | ✅        | ✅ swarms    | ❌          | Tier 4         |
-| 13  | MEMORY.md + HISTORY.md self-write      | ❌            | ✅        | ❌           | ❌          | **T2-1**       |
+| 13  | MEMORY.md + HISTORY.md self-write      | ❌            | ✅        | ❌           | ✅          | ✅ Done (T2-1) |
 
 ### Category 2: Memory System
 
@@ -504,11 +504,11 @@ Channels (7+) --> FastAPI + Uvicorn (port 5000)
 | 14  | Persistent conversation                    | ✅       | ✅           | ✅ per-group .md | ✅            | ✅ SQLite  | ✅ Done   |
 | 15  | Fact / KV storage                          | ✅       | ✅           | ❌               | ✅            | ✅         | ✅ Done   |
 | 16  | Tool result cache with TTL [U]             | ✅       | ❌           | ❌               | ❌            | ✅         | ✅ Keep   |
-| 17  | LLM memory consolidation                   | ❌       | ✅           | ❌               | ✅            | ❌         | **T2-1**  |
+| 17  | LLM memory consolidation                   | ❌       | ✅           | ❌               | ✅            | ✅         | ✅ Done (T2-1) |
 | 18  | Vector / semantic search                   | ❌       | ❌           | ❌               | ✅ pgvector   | ❌         | **T3-4**  |
 | 19  | TF-IDF fact retrieval                      | ❌       | ❌           | ❌               | ❌            | ❌         | **T3-4A** |
 | 20  | 3-layer hierarchy (Category/Item/Resource) | ❌       | ❌           | ❌               | ✅            | ❌         | T3-4B     |
-| 21  | Proactive background memorize              | ❌       | ✅ HEARTBEAT | ❌               | ✅ continuous | ❌         | **T2-2**  |
+| 21  | Proactive background memorize              | ❌       | ✅ HEARTBEAT | ❌               | ✅ continuous | ⚠️ partial | ⚠️ Partial (T2-2) |
 | 22  | Per-session memory isolation               | ✅       | ✅           | ✅               | ✅            | ✅         | ✅ Done   |
 
 ### Category 3: Tool System
@@ -518,7 +518,7 @@ Channels (7+) --> FastAPI + Uvicorn (port 5000)
 | 23  | Built-in tool count [U]               | 20+        | 15+        | 10+          | **25**         | ✅ Lead maintained |
 | 24  | Skill / plugin system                 | ✅ ClawHub | ✅ skills/ | ✅ /add-\*   | ❌             | **T3-2**           |
 | 25  | MCP client                            | ❌         | ✅         | ❌           | ❌             | **T3-3**           |
-| 26  | Tool input schema validation          | ✅ TypeBox | ✅         | ✅           | ❌             | **T3-1**           |
+| 26  | Tool input schema validation          | ✅ TypeBox | ✅         | ✅           | ✅ params      | ✅ Done (T3-1)     |
 | 27  | File path traversal guard             | ✅         | ✅         | ✅ container | ✅ \_safe_path | ✅ Done (T1-4)     |
 | 28  | Parallel tool execution               | ✅         | ✅         | ✅           | ❌             | T3                 |
 | 29  | Tool allow/deny list per session      | ✅         | ❌         | ✅ container | ❌             | T2                 |
@@ -532,10 +532,10 @@ Channels (7+) --> FastAPI + Uvicorn (port 5000)
 
 | #   | Feature                          | OpenClaw    | Nanobot      | NanoClaw       | AgentForge      | Target   |
 | --- | -------------------------------- | ----------- | ------------ | -------------- | --------------- | -------- |
-| 35  | Cron jobs                        | ✅ built-in | ❌           | ✅ APScheduler | ❌              | **T2-3** |
-| 36  | HEARTBEAT background tasks       | ❌          | ✅           | ❌             | ❌              | **T2-2** |
+| 35  | Cron jobs                        | ✅ built-in | ❌           | ✅ APScheduler | ✅ schedule_tool | ✅ Done (T2-3) |
+| 36  | HEARTBEAT background tasks       | ❌          | ✅           | ❌             | ✅              | ✅ Done (T2-2) |
 | 37  | Webhooks (external triggers) [U] | ✅          | ❌           | ❌             | ✅ `/webhook/*` | ✅ Done  |
-| 38  | Agent-initiated messages         | ✅          | ✅ HEARTBEAT | ❌             | ❌              | **T2-2** |
+| 38  | Agent-initiated messages         | ✅          | ✅ HEARTBEAT | ❌             | ⚠️ no push     | ⚠️ Partial (T2-2) |
 
 ### Category 5: Channel Support
 
@@ -557,7 +557,7 @@ Channels (7+) --> FastAPI + Uvicorn (port 5000)
 | #   | Feature                          | OpenClaw        | Nanobot | NanoClaw   | AgentForge | Target         |
 | --- | -------------------------------- | --------------- | ------- | ---------- | ---------- | -------------- |
 | 49  | Slash commands                   | ✅ full set     | ✅      | ✅ /add-\* | ✅ 7 cmds  | ✅ Done (T1-3) |
-| 50  | LLM response streaming           | ✅ block stream | ✅      | ✅         | ❌         | **T2-4**       |
+| 50  | LLM response streaming           | ✅ block stream | ✅      | ✅         | ✅         | ✅ Done (T2-4) |
 | 51  | Typing indicators                | ✅              | ✅      | ✅         | ⚠️         | ⚠️ Partial     |
 | 52  | Tool citation color coding [U]   | ❌              | ❌      | ❌         | ✅         | ✅ Keep        |
 | 53  | Chat filter by tool category [U] | ❌              | ❌      | ❌         | ✅         | ✅ Keep        |
@@ -637,7 +637,7 @@ Channels (7+) --> FastAPI + Uvicorn (port 5000)
 
 | Feature                        | AgentForge                                                | All Competitors                             |
 | ------------------------------ | --------------------------------------------------------- | ------------------------------------------- |
-| **Zero API key mode**          | All 24 tools work with Ollama, no external keys needed    | All require OpenAI/Anthropic or paid tokens |
+| **Zero API key mode**          | All 25 tools work with Ollama, no external keys needed    | All require OpenAI/Anthropic or paid tokens |
 | **LLM-free keyword fallback**  | Always answers even without any LLM running               | None — all require LLM to function          |
 | **Tool result cache with TTL** | SQLite cache avoids redundant API calls, configurable TTL | None have tool-level result caching         |
 | **Activity journal + stats**   | Timestamped log with export, delete, category filtering   | None                                        |
@@ -658,28 +658,28 @@ Channels (7+) --> FastAPI + Uvicorn (port 5000)
 
 ### AgentForge projected coverage vs all competitors
 
-| Category     | **Now (T2 done)** | **After T3** | OpenClaw | Nanobot  | NanoClaw |
-| ------------ | ----------------- | ------------ | -------- | -------- | -------- |
-| Agent Core   | 65%               | 80%          | 100%     | 85%      | 70%      |
-| Memory       | 55%               | 82%          | 50%      | 72%      | 38%      |
-| Tool System  | 65%               | 82%          | 88%      | 68%      | 58%      |
-| Automation   | 58%               | 68%          | 95%      | 62%      | 65%      |
-| Channels     | 45%               | 55%          | 100%     | 55%      | 50%      |
-| UX/Interface | 82%               | 82%          | 75%      | 28%      | 20%      |
-| Security     | 25%               | 55%          | 90%      | 40%      | 80%      |
-| Ops          | 65%               | 65%          | 72%      | 35%      | 20%      |
-| LLM Support  | 80%               | 80%          | 85%      | 80%      | 62%      |
-| **OVERALL**  | **~62%**          | **~77%**     | **~84%** | **~58%** | **~51%** |
+| Category     | **Now (T3-1 done)** | **After T3** | OpenClaw | Nanobot  | NanoClaw |
+| ------------ | ------------------- | ------------ | -------- | -------- | -------- |
+| Agent Core   | 67%                 | 80%          | 100%     | 85%      | 70%      |
+| Memory       | 55%                 | 82%          | 50%      | 72%      | 38%      |
+| Tool System  | 70%                 | 82%          | 88%      | 68%      | 58%      |
+| Automation   | 58%                 | 68%          | 95%      | 62%      | 65%      |
+| Channels     | 45%                 | 55%          | 100%     | 55%      | 50%      |
+| UX/Interface | 82%                 | 82%          | 75%      | 28%      | 20%      |
+| Security     | 25%                 | 55%          | 90%      | 40%      | 80%      |
+| Ops          | 65%                 | 65%          | 72%      | 35%      | 20%      |
+| LLM Support  | 80%                 | 80%          | 85%      | 80%      | 62%      |
+| **OVERALL**  | **~65%**            | **~77%**     | **~84%** | **~58%** | **~51%** |
 
-> **After Tier 2 (current):** ~62% overall. Biggest gains: Automation (+48% — HEARTBEAT + schedule_tool), UX (+10% — streaming), Agent Core (+23% — compaction + streaming).
-> After Tier 3: AgentForge at ~77% **surpasses both Nanobot (~58%) and NanoClaw (~51%)** in overall coverage.
+> **After T3-1 (current):** ~65% overall. T3-1 gains: typed `params` schemas + `_resolve_tool_input()` dispatch on all 25 tools — Tool System +5%, Agent Core +2%.
+> After full Tier 3: AgentForge at ~77% **surpasses both Nanobot (~58%) and NanoClaw (~51%)** in overall coverage.
 
 ---
 
 ## 9. Gap Analysis — Critical Missing Pieces
 
-**P0 — No LLM Token Streaming**
-Every modern agent (OpenClaw, Nanobot, NanoClaw) streams tokens. Users waiting 5–30s is a fundamental UX failure. → **Fix: T2-4**
+~~**P0 — No LLM Token Streaming**~~
+✅ **RESOLVED (T2-4)** — Tool events + token streaming over WebSocket. Users see progressive output in real time.
 
 **P1 — No Slash Commands** ✅ RESOLVED (T1-3)
 `/status`, `/reset`, `/compact`, `/model`, `/tools` are table-stakes for user session control. → **Fixed: 7 commands in `gateway/server.py`, both REST and WebSocket.**
@@ -693,17 +693,17 @@ Every modern agent (OpenClaw, Nanobot, NanoClaw) streams tokens. Users waiting 5
 **P4 — Hardcoded Agent Personality** ✅ RESOLVED (T1-2)
 Nanobot/NanoClaw allow per-instance personality without touching source. We require editing Python. → **Fixed: 5 `.md` files in `runtime/` loaded dynamically into system prompt. No restart needed.**
 
-**P5 — No Context Compaction**
-Sessions > 20 messages degrade LLM quality. Claude Code auto-compacts at 80% of context window. → **Fix: T2-1**
+~~**P5 — No Context Compaction**~~
+✅ **RESOLVED (T2-1)** — Auto-compact every 20 msgs + `/compact` slash command. LLM summarises history and writes `runtime/MEMORY.md`.
 
-**P6 — Agent is Purely Reactive**
-No cron, no heartbeat, no scheduled summaries. Agent cannot initiate anything without user input. → **Fix: T2-2 + T2-3**
+~~**P6 — Agent is Purely Reactive**~~
+⚠️ **PARTIALLY RESOLVED (T2-2 + T2-3)** — HEARTBEAT.md scheduler + `schedule_tool` run background tasks on timer/cron. Gap remaining: background tasks cannot push results to external channels (WebChat WS only).
 
-**P7 — Tool Input is Fragile String Parsing**
-LLM receives `"call weather with Paris"` and must parse it — error-prone. Need typed JSON schemas. → **Fix: T3-1**
+~~**P7 — Tool Input is Fragile String Parsing**~~
+✅ **RESOLVED (T3-1)** — All 25 tools now have `params` dict + `params_to_str` bridge. `_resolve_tool_input()` dispatches typed params to each tool function. LLM sees typed signatures like `weather_lookup(city)`.
 
 **P8 — Memory Retrieval is Substring Search**
-SQLite `LIKE` search is not semantic. memU shows 92% accuracy with vector retrieval vs ~60% substring. → **Fix: T3-4**
+SQLite `LIKE` search is not semantic. memU shows 92% accuracy with vector retrieval vs ~60% substring. → **Fix: T3-4A (TF-IDF, next)**
 
 **P9 — No Health Endpoint or Auth**
 `/health` for monitoring and `API_AUTH_TOKEN` for access control are day-1 production requirements. → **Fix: Phase 5**
@@ -727,7 +727,7 @@ SQLite `LIKE` search is not semantic. memU shows 92% accuracy with vector retrie
 |   T2-4  LLM token streaming over WebSocket                ✅      |
 +-------------------------------------------------------------------+
 | Tier 3 -- Major Features     (multi-day, new architecture)        |
-|   T3-1  Typed tool schemas (OpenAI function calling format)      |
+|   T3-1  Typed tool schemas (params + params_to_str, 25 tools) ✅ |
 |   T3-2  Skill / plugin system (skills/ dir + /install cmd)       |
 |   T3-3  MCP client (external tool servers via MCP_SERVERS env)  |
 |   T3-4  RAG memory: A=TF-IDF -> B=ChromaDB -> C=pgvector       |
