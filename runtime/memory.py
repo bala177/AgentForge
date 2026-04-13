@@ -35,6 +35,16 @@ from dataclasses import dataclass, field
 from typing import Optional
 from log_config import get_logger
 
+# T3-4A: TF-IDF semantic retrieval (scikit-learn — already in requirements)
+try:
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    from sklearn.metrics.pairwise import cosine_similarity
+    import numpy as np
+    _HAS_SKLEARN = True
+except (ImportError, ValueError):
+    # ValueError covers numpy/sklearn binary incompatibility (mismatched build)
+    _HAS_SKLEARN = False
+
 log = get_logger("memory")
 
 _DB_PATH = Path(__file__).resolve().parent.parent / "memory.db"
@@ -362,6 +372,87 @@ class MemoryStore:
             )
             for r in rows
         ]
+
+    def retrieve_relevant_facts(
+        self,
+        query: str,
+        session_id: Optional[str] = None,
+        top_n: int = 5,
+        min_score: float = 0.05,
+    ) -> list[Fact]:
+        """
+        T3-4A — Semantic fact retrieval using TF-IDF + cosine similarity.
+
+        Ranks all stored facts by relevance to `query` and returns the top_n
+        most relevant. Falls back to LIKE substring search if scikit-learn is
+        unavailable or corpus is empty.
+
+        Args:
+            query:      Natural-language query (e.g. "what does the user prefer?")
+            session_id: If provided, also include recent conversation messages in
+                        the corpus to boost recency-weighted matching.
+            top_n:      Maximum number of facts to return (default 5).
+            min_score:  Minimum cosine similarity threshold (default 0.05).
+
+        Returns:
+            List of Fact objects sorted by relevance (most relevant first).
+        """
+        if not query.strip():
+            return self.search_facts("", limit=top_n)
+
+        all_facts = self.search_facts("", limit=500)
+        if not all_facts:
+            return []
+
+        if not _HAS_SKLEARN:
+            log.debug("TF-IDF unavailable — falling back to LIKE search")
+            return self.search_facts(query, limit=top_n)
+
+        try:
+            # Build corpus: one document per fact (key + value combined)
+            corpus = [f"{f.key} {f.value}" for f in all_facts]
+
+            # Optionally enrich corpus with recent conversation context
+            if session_id:
+                recent_msgs = self.get_conversation(session_id, limit=10)
+                for msg in recent_msgs:
+                    corpus.append(msg.content[:300])
+                    all_facts.append(None)  # placeholder — won't be returned
+
+            # Fit vectorizer on corpus + query together so query terms are in vocab
+            docs = corpus + [query]
+            vectorizer = TfidfVectorizer(
+                ngram_range=(1, 2),
+                min_df=1,
+                stop_words="english",
+                sublinear_tf=True,
+            )
+            tfidf_matrix = vectorizer.fit_transform(docs)
+
+            # Query vector is the last row; corpus vectors are all preceding rows
+            query_vec = tfidf_matrix[-1]
+            corpus_vecs = tfidf_matrix[:-1]
+
+            scores = cosine_similarity(query_vec, corpus_vecs).flatten()
+
+            # Collect (score, fact) for actual fact entries (skip None placeholders)
+            ranked = [
+                (scores[i], all_facts[i])
+                for i in range(len(all_facts))
+                if all_facts[i] is not None and scores[i] >= min_score
+            ]
+            ranked.sort(key=lambda x: x[0], reverse=True)
+
+            results = [fact for _, fact in ranked[:top_n]]
+            log.debug(
+                "TF-IDF retrieve: query=%r → %d results (top score=%.3f)",
+                query[:60], len(results), ranked[0][0] if ranked else 0,
+            )
+            return results
+
+        except Exception as exc:
+            log.warning("TF-IDF retrieval failed (%s) — falling back to LIKE search", exc)
+            return self.search_facts(query, limit=top_n)
 
     def delete_fact(self, key: str) -> bool:
         """Delete a fact. Returns True if it existed."""

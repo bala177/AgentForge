@@ -66,6 +66,9 @@ class WhatsAppAdapter(ChannelAdapter):
             messages = value.get("messages", [])
 
             if not messages:
+                # Delivery/read receipts send "statuses" instead of "messages" — ignore silently
+                if value.get("statuses"):
+                    raise ValueError("__ignore__:status_webhook")
                 raise ValueError("No messages in webhook payload")
 
             msg = messages[0]
@@ -168,7 +171,7 @@ class WhatsAppAdapter(ChannelAdapter):
 
         expected = "sha256=" + hmac.new(
             WHATSAPP_APP_SECRET.encode(),
-            body,
+            body if isinstance(body, bytes) else body.encode(),
             hashlib.sha256,
         ).hexdigest()
 

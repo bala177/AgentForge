@@ -17,7 +17,7 @@ import asyncio
 import threading
 from pathlib import Path
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, UploadFile, File, Form
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, UploadFile, File, Form, BackgroundTasks
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -1243,8 +1243,49 @@ async def whatsapp_verify(request: Request):
     return JSONResponse({"error": "Verification failed"}, status_code=403)
 
 
+async def _discord_deferred_task(message, session, discord_adapter):
+    """
+    Background task for Discord slash commands: run the agent then PATCH the
+    original deferred response. Called after the webhook already returned
+    {"type": 5} to Discord within the mandatory 3-second window.
+    """
+    try:
+        t0 = time.perf_counter()
+        result = await asyncio.to_thread(agent.run, message.text, session.session_id)
+        elapsed = (time.perf_counter() - t0) * 1000
+
+        reply = AgentReply(
+            text=result.get("answer", ""),
+            steps=result.get("steps", []),
+            plan=result.get("plan", []),
+            mode=result.get("mode", ""),
+            model=result.get("model", ""),
+            metadata=message.metadata,
+        )
+        session.add_message("assistant", reply.text)
+
+        tools_used = ", ".join(
+            s.get("tool", "") for s in result.get("steps", [])
+            if s.get("tool") and s["tool"] != "none"
+        )
+        activity_store.log_activity(
+            act_type="chat", tool=tools_used,
+            input_text=message.text, output_text=reply.text,
+            success=True, duration_ms=elapsed,
+            mode=result.get("mode", ""), model=result.get("model", ""),
+            steps=len(result.get("steps", [])),
+            session_id=session.session_id,
+        )
+
+        interaction_token = message.metadata.get("interaction_token", "")
+        await discord_adapter.patch_deferred_reply(interaction_token, reply)
+        log.info("Discord deferred task completed in %.1f ms", elapsed)
+    except Exception as e:
+        log.exception("Discord deferred task failed: %s", e)
+
+
 @app.post("/webhook/{channel}")
-async def channel_webhook(channel: str, request: Request):
+async def channel_webhook(channel: str, request: Request, background_tasks: BackgroundTasks):
     """
     Incoming webhook for external channels (WhatsApp, Slack, etc.).
     Routes through the appropriate ChannelAdapter.
@@ -1307,7 +1348,15 @@ async def channel_webhook(channel: str, request: Request):
     )
     session.add_message("user", message.text)
 
-    # ── Run the agent ──
+    # ── Discord slash command: acknowledge immediately, finish in background ──
+    # Discord requires a response within 3 seconds. The agent takes 5-30s.
+    # Return {"type": 5} (DEFERRED_CHANNEL_MESSAGE) now, PATCH later.
+    if channel == "discord" and message.metadata.get("interaction_token"):
+        background_tasks.add_task(_discord_deferred_task, message, session, adapter)
+        log.info("Discord slash command deferred — returning type 5 ACK")
+        return JSONResponse({"type": 5})
+
+    # ── Run the agent (all other channels — synchronous) ──
     try:
         t0 = time.perf_counter()
         result = await asyncio.to_thread(

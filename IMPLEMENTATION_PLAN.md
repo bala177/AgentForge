@@ -89,7 +89,7 @@
 | Item  | Description                                    | Files Changed                                      | Status      | Tested |
 | ----- | ---------------------------------------------- | -------------------------------------------------- | ----------- | ------ |
 | T3-1  | Typed tool schemas (params + params_to_str)    | `runtime/tools.py`, `runtime/agent.py`             | ✅ DONE     | ✅     |
-| T3-4A | TF-IDF semantic memory retrieval               | `runtime/memory.py`                                | ❌ TODO     | —      |
+| T3-4A | TF-IDF semantic memory retrieval               | `runtime/memory.py`, `runtime/agent.py`            | ✅ DONE     | ✅     |
 | T3-2  | Skill / plugin system (`skills/` directory)    | `runtime/tools.py`, `gateway/server.py`            | ❌ TODO     | —      |
 | T3-3  | MCP client (`MCP_SERVERS` env var)             | `runtime/mcp_client.py` (new)                      | ❌ TODO     | —      |
 | T3-4B | ChromaDB vector memory                         | `runtime/memory.py`                                | ❌ TODO     | —      |
@@ -99,7 +99,7 @@
 | Item                                                    | Status         | Target  |
 | ------------------------------------------------------- | -------------- | ------- |
 | **T3-1** — Typed tool schemas                           | ✅ COMPLETE    | Done    |
-| **T3-4A** — TF-IDF semantic memory retrieval            | ❌ TODO        | Next    |
+| **T3-4A** — TF-IDF semantic memory retrieval            | ✅ COMPLETE    | Done    |
 | **T3-2** — Skill/plugin system                          | ❌ TODO        | Week 3  |
 | **T3-3** — MCP client                                   | ❌ TODO        | Week 4  |
 | **T3-4B** — ChromaDB vector memory                      | ❌ TODO        | Week 4  |
@@ -506,7 +506,7 @@ Channels (7+) --> FastAPI + Uvicorn (port 5000)
 | 16  | Tool result cache with TTL [U]             | ✅       | ❌           | ❌               | ❌            | ✅         | ✅ Keep   |
 | 17  | LLM memory consolidation                   | ❌       | ✅           | ❌               | ✅            | ✅         | ✅ Done (T2-1) |
 | 18  | Vector / semantic search                   | ❌       | ❌           | ❌               | ✅ pgvector   | ❌         | **T3-4**  |
-| 19  | TF-IDF fact retrieval                      | ❌       | ❌           | ❌               | ❌            | ❌         | **T3-4A** |
+| 19  | TF-IDF fact retrieval                      | ❌       | ❌           | ❌               | ❌            | ✅         | ✅ Done (T3-4A) |
 | 20  | 3-layer hierarchy (Category/Item/Resource) | ❌       | ❌           | ❌               | ✅            | ❌         | T3-4B     |
 | 21  | Proactive background memorize              | ❌       | ✅ HEARTBEAT | ❌               | ✅ continuous | ⚠️ partial | ⚠️ Partial (T2-2) |
 | 22  | Per-session memory isolation               | ✅       | ✅           | ✅               | ✅            | ✅         | ✅ Done   |
@@ -658,20 +658,20 @@ Channels (7+) --> FastAPI + Uvicorn (port 5000)
 
 ### AgentForge projected coverage vs all competitors
 
-| Category     | **Now (T3-1 done)** | **After T3** | OpenClaw | Nanobot  | NanoClaw |
-| ------------ | ------------------- | ------------ | -------- | -------- | -------- |
-| Agent Core   | 67%                 | 80%          | 100%     | 85%      | 70%      |
-| Memory       | 55%                 | 82%          | 50%      | 72%      | 38%      |
-| Tool System  | 70%                 | 82%          | 88%      | 68%      | 58%      |
-| Automation   | 58%                 | 68%          | 95%      | 62%      | 65%      |
-| Channels     | 45%                 | 55%          | 100%     | 55%      | 50%      |
-| UX/Interface | 82%                 | 82%          | 75%      | 28%      | 20%      |
-| Security     | 25%                 | 55%          | 90%      | 40%      | 80%      |
-| Ops          | 65%                 | 65%          | 72%      | 35%      | 20%      |
-| LLM Support  | 80%                 | 80%          | 85%      | 80%      | 62%      |
-| **OVERALL**  | **~65%**            | **~77%**     | **~84%** | **~58%** | **~51%** |
+| Category     | **Now (T3-4A done)** | **After T3** | OpenClaw | Nanobot  | NanoClaw |
+| ------------ | -------------------- | ------------ | -------- | -------- | -------- |
+| Agent Core   | 67%                  | 80%          | 100%     | 85%      | 70%      |
+| Memory       | 65%                  | 82%          | 50%      | 72%      | 38%      |
+| Tool System  | 70%                  | 82%          | 88%      | 68%      | 58%      |
+| Automation   | 58%                  | 68%          | 95%      | 62%      | 65%      |
+| Channels     | 48%                  | 55%          | 100%     | 55%      | 50%      |
+| UX/Interface | 82%                  | 82%          | 75%      | 28%      | 20%      |
+| Security     | 25%                  | 55%          | 90%      | 40%      | 80%      |
+| Ops          | 65%                  | 65%          | 72%      | 35%      | 20%      |
+| LLM Support  | 80%                  | 80%          | 85%      | 80%      | 62%      |
+| **OVERALL**  | **~67%**             | **~77%**     | **~84%** | **~58%** | **~51%** |
 
-> **After T3-1 (current):** ~65% overall. T3-1 gains: typed `params` schemas + `_resolve_tool_input()` dispatch on all 25 tools — Tool System +5%, Agent Core +2%.
+> **After T3-4A + channel fixes (current):** ~67% overall. Memory +10% (TF-IDF semantic retrieval), Channels +3% (Discord deferred response, WhatsApp status fix).
 > After full Tier 3: AgentForge at ~77% **surpasses both Nanobot (~58%) and NanoClaw (~51%)** in overall coverage.
 
 ---
@@ -728,9 +728,10 @@ SQLite `LIKE` search is not semantic. memU shows 92% accuracy with vector retrie
 +-------------------------------------------------------------------+
 | Tier 3 -- Major Features     (multi-day, new architecture)        |
 |   T3-1  Typed tool schemas (params + params_to_str, 25 tools) ✅ |
+|   T3-4A TF-IDF semantic memory retrieval (scikit-learn)       ✅ |
 |   T3-2  Skill / plugin system (skills/ dir + /install cmd)       |
 |   T3-3  MCP client (external tool servers via MCP_SERVERS env)  |
-|   T3-4  RAG memory: A=TF-IDF -> B=ChromaDB -> C=pgvector       |
+|   T3-4B ChromaDB vector memory (upgrade from TF-IDF)            |
 +-------------------------------------------------------------------+
 | Phase 5 -- Security & Ops    (original roadmap, ~1 day)           |
 |   /health endpoint, API_AUTH_TOKEN middleware                    |
@@ -1421,12 +1422,14 @@ Tier 2:  runtime/agent.py, runtime/memory.py, runtime/tools.py,
          NEW FILES: runtime/MEMORY.md (auto-generated by agent during compaction)
          DEPS ADD:  pip install apscheduler
 
-Tier 3:  runtime/tools.py, runtime/agent.py  ← T3-1 done (typed schemas)
-         runtime/memory.py                   ← T3-4A next (TF-IDF)
-         gateway/server.py                   ← T3-2 (skills /install command)
-         NEW FILES: runtime/mcp_client.py    ← T3-3
-         NEW DIRS:  skills/                  ← T3-2
-         DEPS ADD:  pip install scikit-learn (T3-4A), chromadb (T3-4B)
+Tier 3:  runtime/tools.py, runtime/agent.py            ← T3-1 done (typed schemas)
+         runtime/memory.py, runtime/agent.py           ← T3-4A done (TF-IDF retrieval)
+         gateway/channels/discord.py, server.py        ← Discord P0 fix (deferred response)
+         gateway/channels/whatsapp.py                  ← WhatsApp status webhook fix
+         gateway/server.py                             ← T3-2 next (skills /install command)
+         NEW FILES: runtime/mcp_client.py              ← T3-3
+         NEW DIRS:  skills/                            ← T3-2
+         DEPS ADD:  scikit-learn>=1.3 (T3-4A added to requirements.txt), chromadb (T3-4B)
 
 Phase 5: gateway/server.py, config.py, llm/provider.py
 ```

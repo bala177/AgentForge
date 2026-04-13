@@ -211,11 +211,21 @@ class AgentForge:
         log.info("%s [LLM: %s] received: \"%s\"", self.name, self.llm_config.model, user_input)
         log.info("="*50)
 
-        # Build system prompt — inject long-term facts if any
+        # Build system prompt — inject relevant facts (T3-4A: TF-IDF ranked, falls back to all)
         sys_content = self._system_prompt()
-        facts_ctx = self.memory_store.all_facts_as_context(limit=20)
-        if facts_ctx:
-            sys_content += "\n\n" + facts_ctx
+        relevant_facts = self.memory_store.retrieve_relevant_facts(
+            user_input, session_id=self._session_id, top_n=8
+        )
+        if relevant_facts:
+            lines = ["Relevant facts about the user/context:"]
+            for f in relevant_facts:
+                lines.append(f"  - {f.key}: {f.value}")
+            sys_content += "\n\n" + "\n".join(lines)
+        elif not relevant_facts:
+            # Fallback: inject all facts if TF-IDF returned nothing
+            facts_ctx = self.memory_store.all_facts_as_context(limit=20)
+            if facts_ctx:
+                sys_content += "\n\n" + facts_ctx
 
         messages = [
             {"role": "system", "content": sys_content},
@@ -896,10 +906,20 @@ class AgentForge:
           {"type": "token",      "token": chunk}   ← final answer tokens
           {"type": "done",       "answer": text, "steps": [...], ...}
         """
+        # T3-4A: inject relevant facts (TF-IDF ranked, falls back to all)
         sys_content = self._system_prompt()
-        facts_ctx = self.memory_store.all_facts_as_context(limit=20)
-        if facts_ctx:
-            sys_content += "\n\n" + facts_ctx
+        relevant_facts = self.memory_store.retrieve_relevant_facts(
+            user_input, session_id=self._session_id, top_n=8
+        )
+        if relevant_facts:
+            lines = ["Relevant facts about the user/context:"]
+            for f in relevant_facts:
+                lines.append(f"  - {f.key}: {f.value}")
+            sys_content += "\n\n" + "\n".join(lines)
+        else:
+            facts_ctx = self.memory_store.all_facts_as_context(limit=20)
+            if facts_ctx:
+                sys_content += "\n\n" + facts_ctx
 
         messages = [{"role": "system", "content": sys_content}]
         if self._session_id:

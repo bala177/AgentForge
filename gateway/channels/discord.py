@@ -160,7 +160,8 @@ class DiscordAdapter(ChannelAdapter):
         """
         Send a reply back to Discord.
 
-        For interactions: uses the interaction callback endpoint.
+        For interactions: uses the interaction callback endpoint (only for
+        non-deferred flows). For deferred slash commands, use patch_deferred_reply().
         For regular messages: uses the channel messages endpoint.
         """
         interaction_token = reply.metadata.get("interaction_token")
@@ -168,7 +169,7 @@ class DiscordAdapter(ChannelAdapter):
 
         formatted = self.format_for_platform(reply)
 
-        # Method 1: Interaction response (slash commands)
+        # Method 1: Interaction callback (only for synchronous, non-deferred responses)
         if interaction_token and interaction_id:
             url = f"{DISCORD_API_URL}/interactions/{interaction_id}/{interaction_token}/callback"
             payload = {
@@ -188,7 +189,7 @@ class DiscordAdapter(ChannelAdapter):
                 log.error("Discord interaction send failed: %s", e)
                 return False
 
-        # Method 2: Regular channel message
+        # Method 2: Regular channel message (proxied from bot gateway)
         channel_id = reply.metadata.get("channel_id")
         if channel_id and DISCORD_BOT_TOKEN:
             url = f"{DISCORD_API_URL}/channels/{channel_id}/messages"
@@ -209,6 +210,36 @@ class DiscordAdapter(ChannelAdapter):
 
         log.warning("Discord not configured — skipping send")
         return False
+
+    async def patch_deferred_reply(self, interaction_token: str, reply: AgentReply) -> bool:
+        """
+        PATCH the original deferred Discord response with the actual agent answer.
+
+        Must be called after the server already returned {"type": 5} (DEFERRED) to
+        Discord within the 3-second interaction window.
+
+        Endpoint: PATCH /webhooks/{APP_ID}/{token}/messages/@original
+        The token remains valid for 15 minutes after the interaction.
+        """
+        if not DISCORD_APP_ID:
+            log.warning("DISCORD_APP_ID not set — cannot patch deferred reply")
+            return False
+
+        url = f"{DISCORD_API_URL}/webhooks/{DISCORD_APP_ID}/{interaction_token}/messages/@original"
+        payload = {"content": self.format_for_platform(reply)}
+
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.patch(url, json=payload, timeout=30)
+                if resp.status_code in (200, 204):
+                    log.info("Discord deferred reply patched successfully")
+                    return True
+                else:
+                    log.error("Discord PATCH error %d: %s", resp.status_code, resp.text[:200])
+                    return False
+        except Exception as e:
+            log.error("Discord patch_deferred_reply failed: %s", e)
+            return False
 
     async def verify_request(self, raw_data: Any) -> bool:
         """

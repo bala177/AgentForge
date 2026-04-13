@@ -23,5 +23,8 @@ pyyaml>=6.0          # JSON/YAML tool (Tool 15) — YAML parsing
 # Optional: For OpenAI cloud API
 # openai>=1.0
 
+# T3-4A: TF-IDF semantic memory retrieval
+scikit-learn>=1.3
+
 # Optional: For Discord signature verification
 # PyNaCl>=1.5
